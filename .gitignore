@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 本地数据库（运行时由 seed 生成，含业务数据，不入库）
+data/
+
+# 备份与日志
+# backup/ 存放 deploy/backup.js 产出的完整数据库快照，含全部业务数据（客户、财务），
+# 一旦入库会被推送到远端仓库，属于数据泄露风险，必须排除
+backup/
+*.db
+*.bak
+*.log
+npm-debug.log*
+
+# 自签证书（gencert.js 生成，含私钥，不入库）
+ssl.key
+ssl.crt
+
+# 代理/缓存
+.workbuddy/
+.DS_Store

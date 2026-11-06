@@ -1,0 +1,27 @@
+[Unit]
+Description=Workshop ERP Service
+Documentation=https://github.com/qqqqqqiu0804/workshop-app
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workshop-app
+
+# node:sqlite 在 Node 22 仍为实验特性，必须带 --experimental-sqlite
+ExecStart=/usr/bin/node --experimental-sqlite --disable-warning=ExperimentalWarning server.js
+
+Restart=always
+RestartSec=5
+
+Environment=NODE_ENV=production
+Environment=PORT=3000
+# 数据库路径默认 项目/data/workshop.db；如需改位置取消下行注释
+# Environment=DB_PATH=/home/ubuntu/workshop-app/data/workshop.db
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
