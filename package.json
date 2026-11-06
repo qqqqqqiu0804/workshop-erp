@@ -1,0 +1,21 @@
+{
+  "name": "hardware-workshop-app",
+  "version": "1.0.0",
+  "description": "五金厂车间生产管理工作台：员工管理 / 生产任务报工 / 原料与成品库存 / 进销存 / 资金对账（离线零依赖）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --experimental-sqlite --disable-warning=ExperimentalWarning server.js",
+    "seed": "node --experimental-sqlite --disable-warning=ExperimentalWarning seed.js",
+    "reset": "node --experimental-sqlite --disable-warning=ExperimentalWarning reset.js",
+    "build:pages": "node build-pages.js",
+    "test": "node --experimental-sqlite --disable-warning=ExperimentalWarning --test --test-concurrency=1"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^2.2.0",
+    "xlsx": "^0.18.5"
+  }
+}

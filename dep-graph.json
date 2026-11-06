@@ -1,0 +1,155 @@
+{
+  "db.js": [],
+  "routes/_helpers.js": [],
+  "routes/_rbac.js": [
+    "db.js"
+  ],
+  "routes/ap.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/ar.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/audit.js": [
+    "db.js",
+    "routes/auth.js"
+  ],
+  "routes/auth.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/bom-import.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/boms.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/customers.js": [
+    "db.js",
+    "routes/_helpers.js",
+    "routes/_rbac.js"
+  ],
+  "routes/employees.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/finance.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/finished-goods.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/import-masterdata.js": [
+    "db.js",
+    "routes/_helpers.js",
+    "routes/_rbac.js"
+  ],
+  "routes/inventory-count.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/machines.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/material-requisitions.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/materials.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/mrp.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/outsources.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/production-tasks.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/production.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/products.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/purchase-orders.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/purchase-plans.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/quality.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/quotations.js": [
+    "db.js",
+    "routes/_helpers.js",
+    "routes/_rbac.js",
+    "routes/auth.js"
+  ],
+  "routes/sales-orders.js": [
+    "db.js",
+    "routes/_helpers.js",
+    "routes/_rbac.js"
+  ],
+  "routes/stats.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/suppliers.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "routes/teams.js": [
+    "db.js",
+    "routes/_helpers.js"
+  ],
+  "server.js": [
+    "routes/_rbac.js",
+    "routes/ap.js",
+    "routes/ar.js",
+    "routes/audit.js",
+    "routes/auth.js",
+    "routes/bom-import.js",
+    "routes/boms.js",
+    "routes/customers.js",
+    "routes/employees.js",
+    "routes/finance.js",
+    "routes/finished-goods.js",
+    "routes/import-masterdata.js",
+    "routes/inventory-count.js",
+    "routes/machines.js",
+    "routes/material-requisitions.js",
+    "routes/materials.js",
+    "routes/mrp.js",
+    "routes/outsources.js",
+    "routes/production-tasks.js",
+    "routes/production.js",
+    "routes/products.js",
+    "routes/purchase-orders.js",
+    "routes/purchase-plans.js",
+    "routes/quality.js",
+    "routes/quotations.js",
+    "routes/sales-orders.js",
+    "routes/stats.js",
+    "routes/suppliers.js",
+    "routes/teams.js"
+  ]
+}

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>五金制造厂 ERP 工作台 · 数据库设计介绍</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --accent:#2563eb; --accent-2:#0d9488;
+    --soft:#eff6ff; --soft-2:#f0fdfa; --warn:#b45309;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.6;
+  }
+  .topbar{
+    position:fixed; top:0; left:0; right:0; height:54px; z-index:50;
+    display:flex; align-items:center; gap:14px; padding:0 22px;
+    background:rgba(15,23,42,.92); color:#e2e8f0; backdrop-filter:blur(6px);
+  }
+  .topbar .brand{font-weight:700; letter-spacing:.5px; font-size:15px}
+  .topbar .brand span{color:#93c5fd}
+  .topbar .counter{margin-left:auto; font-variant-numeric:tabular-nums; color:#cbd5e1; font-size:13px}
+  .topbar .navbtns{display:flex; gap:8px}
+  .topbar button{
+    background:#1e293b; color:#e2e8f0; border:1px solid #334155;
+    border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;
+  }
+  .topbar button:hover{background:#334155}
+  .topbar button:disabled{opacity:.35; cursor:default}
+
+  .deck{height:100%; padding-top:54px}
+  .slide{
+    display:none; min-height:calc(100vh - 54px);
+    padding:42px clamp(20px,5vw,72px) 64px;
+    background:var(--panel); overflow:auto;
+  }
+  .slide.active{display:block}
+  .slide:nth-child(even){background:#fbfcfe}
+
+  .wrap{max-width:1080px; margin:0 auto}
+  .kicker{color:var(--accent); font-weight:700; letter-spacing:2px; font-size:12px; text-transform:uppercase}
+  h1{font-size:clamp(26px,4vw,40px); line-height:1.2; margin:10px 0 6px; letter-spacing:-.5px}
+  h2{font-size:clamp(20px,2.6vw,27px); margin:6px 0 18px; letter-spacing:-.3px;
+     border-left:5px solid var(--accent); padding-left:14px}
+  .lead{color:var(--muted); font-size:16px; max-width:70ch}
+  p{margin:8px 0}
+
+  .grid{display:grid; gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:760px){.g2,.g3{grid-template-columns:1fr}}
+
+  .card{
+    border:1px solid var(--line); border-radius:14px; padding:18px 20px; background:#fff;
+  }
+  .card h3{font-size:16px; margin-bottom:6px; display:flex; align-items:center; gap:8px}
+  .card .tag{
+    font-size:11px; font-weight:700; color:#fff; background:var(--accent);
+    border-radius:999px; padding:2px 9px; letter-spacing:.5px;
+  }
+  .card .tag.t2{background:var(--accent-2)}
+  .card ul{margin:6px 0 0 18px; font-size:14px; color:#334155}
+  .card ul li{margin:3px 0}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:6px}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:var(--soft); color:#1e40af; font-weight:700; font-size:12.5px; letter-spacing:.3px}
+  td code, code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:12.5px;
+     background:#f1f5f9; padding:1px 5px; border-radius:5px; color:#0f172a}
+  tr:hover td{background:#f8fafc}
+
+  .pill{display:inline-block; font-size:11.5px; padding:2px 9px; border-radius:999px;
+    background:var(--soft-2); color:#0f766e; border:1px solid #99f6e4; margin:2px 4px 2px 0}
+  .pill.r{background:#fef2f2; color:#b91c1c; border-color:#fecaca}
+  .pill.b{background:var(--soft); color:#1d4ed8; border-color:#bfdbfe}
+
+  .flow{display:flex; flex-wrap:wrap; align-items:stretch; gap:0; margin:14px 0}
+  .step{
+    flex:1 1 150px; min-width:140px; border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; background:#fff; position:relative;
+  }
+  .step .n{display:inline-flex; width:24px; height:24px; border-radius:50%;
+    background:var(--accent); color:#fff; font-weight:700; font-size:13px; align-items:center; justify-content:center; margin-bottom:6px}
+  .step .t{font-weight:700; font-size:14px}
+  .step .d{font-size:12.5px; color:#475569; margin-top:3px}
+  .arrow{display:flex; align-items:center; color:var(--accent); font-size:20px; padding:0 4px}
+  @media(max-width:760px){.arrow{transform:rotate(90deg)}}
+
+  .callout{border-left:4px solid var(--accent-2); background:var(--soft-2);
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0; font-size:14.5px}
+  .legend{font-size:12px; color:var(--muted); margin-top:10px}
+  .legend b{color:var(--ink)}
+
+  .cover{background:linear-gradient(135deg,#0f172a,#1e3a8a); color:#e2e8f0}
+  .cover .kicker{color:#93c5fd}
+  .cover h1{color:#fff; font-size:clamp(30px,5vw,52px)}
+  .cover .lead{color:#cbd5e1}
+  .cover .meta{margin-top:26px; display:flex; gap:10px; flex-wrap:wrap}
+  .cover .meta .pill{background:#1e293b; color:#bfdbfe; border-color:#334155}
+  .cover .foot{position:absolute; bottom:34px; left:clamp(20px,5vw,72px); color:#94a3b8; font-size:13px}
+
+  .dots{position:fixed; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:7px; z-index:50}
+  .dots button{width:9px; height:9px; border-radius:50%; border:none; background:#475569; cursor:pointer; padding:0}
+  .dots button.on{background:#60a5fa; transform:scale(1.25)}
+  .hint{position:fixed; bottom:14px; right:18px; color:#94a3b8; font-size:12px; z-index:50}
+  @media print{
+    .topbar,.dots,.hint{display:none}
+    .slide{display:block !important; min-height:auto; page-break-after:always; padding:30px}
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">五金厂 ERP 工作台 · <span>数据库设计介绍</span></div>
+  <div class="counter" id="counter">1 / 9</div>
+  <div class="navbtns">
+    <button id="prev">← 上一页</button>
+    <button id="next">下一页 →</button>
+  </div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- Slide 1: 封面 -->
+  <section class="slide active cover">
+    <div class="wrap">
+      <div class="kicker">DATABASE DESIGN · 面向老师的技术讲解</div>
+      <h1>五金制造厂 ERP 工作台<br/>数据库设计介绍</h1>
+      <p class="lead">一套面向 26 人、23 台机、2 车间五金加工厂的轻量业财一体化系统。
+      数据库以「主数据底座 + 六大业务闭环 + 实时派生」为核心，使用 Node 内置 SQLite，零依赖、可离线部署。</p>
+      <div class="meta">
+        <span class="pill">存储引擎：node:sqlite（WAL）</span>
+        <span class="pill">40+ 张表</span>
+        <span class="pill">外键级联 + 实时计算</span>
+        <span class="pill">覆盖 OTC/P2P/P2D/WMS/QMS/FICO</span>
+      </div>
+    </div>
+    <div class="foot">演示材料 · 2026-08-28 · 如无远程依赖，单机/车间电脑即可运行</div>
+  </section>
+
+  <!-- Slide 2: 设计思路 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">DESIGN PRINCIPLES</div>
+      <h2>一、设计思路：四条核心原则</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3><span class="tag">01</span>主数据底座先行</h3>
+          <ul>
+            <li>物料 / 客户 / 供应商 / 产品 / BOM / 机台 / 员工统一编码，作为所有业务的「锚点」</li>
+            <li>先有干净的主数据，业务单据才能正确关联、追溯</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="tag t2">02</span>实时派生、不冗余存储</h3>
+          <ul>
+            <li>库存余额、工序产量、应收/应付余额等一律用 SQL <b>实时聚合计算</b></li>
+            <li>避免「多处存同一数」导致对不上——保证单一真相源</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="tag">03</span>外键 + 级联保证完整性</h3>
+          <ul>
+            <li>每张表明确「删了会怎样」：明细 <code>CASCADE</code>、可选关联 <code>SET NULL</code>、防误删 <code>RESTRICT</code></li>
+            <li>引用关系由数据库兜底，不靠应用层记忆</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="tag t2">04</span>离线零依赖、可部署</h3>
+          <ul>
+            <li>Node 22 内置 <code>node:sqlite</code>，无需安装数据库服务</li>
+            <li><code>WAL</code> + <code>busy_timeout</code> 抗并发写；单机/车间电脑即跑</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">设计哲学：<b>「能算的就不存」</b> + <b>「关联交给外键」</b>。把一致性责任下沉到数据库，降低业务代码的出错面。</div>
+    </div>
+  </section>
+
+  <!-- Slide 3: 整体架构 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">ARCHITECTURE</div>
+      <h2>二、整体架构：底座 + 六大闭环 + 派生层</h2>
+      <div class="grid g3">
+        <div class="card"><h3><span class="tag">存储</span>存储引擎</h3>
+          <ul><li><code>workshop.db</code>（SQLite，WAL 模式）</li><li>单文件、零服务、易备份</li></ul></div>
+        <div class="card"><h3><span class="tag t2">底座</span>主数据底座</h3>
+          <ul><li>customers / teams / machines / employees</li><li>products / materials / suppliers / locations</li></ul></div>
+        <div class="card"><h3><span class="tag">派生</span>实时派生层</h3>
+          <ul><li>库存余额、产量、MRP 净需求、毛利率</li><li>均 SQL 实时算，不落表</li></ul></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>六大业务闭环（表分组）</h3>
+        <p style="font-size:14px">
+          <span class="pill b">OTC 销售到收款</span> quotations → sales_orders → so_items → fg_stock_out(发货) → ar_invoices → ar_receipts<br/>
+          <span class="pill b">P2P 采购到付款</span> purchase_plans → purchase_orders → po_items → stock_in(到货) → ap_invoices → ap_payments + purchase_invoices(三单匹配)<br/>
+          <span class="pill b">P2D 计划到生产</span> boms / bom_items → production_tasks → task_operations → production_log(报工) → material_requisitions(领料)<br/>
+          <span class="pill b">WMS 仓储物流</span> stock_in / stock_out(原料) + finished_goods / fg_stock_in / fg_stock_out(成品) + locations + inventory_count(盘点)<br/>
+          <span class="pill b">QMS 质量管理</span> quality_checks(进料/过程/成品/外发回收) + outsources(外发)<br/>
+          <span class="pill b">FICO 财务过账</span> finance_ledger(成本台账) + ar_* / ap_*(资金流)
+        </p>
+      </div>
+      <div class="legend"><b>架构要点：</b>所有闭环都挂在「主数据底座」上；业务单据实时汇向「财务（FICO）」，质量（QMS）贯穿制造全程。</div>
+    </div>
+  </section>
+
+  <!-- Slide 4: 核心表结构（一）主数据 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">SCHEMA · 主数据底座</div>
+      <h2>三、核心表结构（一）：主数据底座</h2>
+      <table>
+        <thead><tr><th>表</th><th>用途</th><th>核心字段</th></tr></thead>
+        <tbody>
+          <tr><td><code>customers</code></td><td>客户档案</td><td>id, <b>name(UNIQUE)</b>, type(国内/国外), <b>owner_role</b>(RBAC 客户隔离)</td></tr>
+          <tr><td><code>teams</code></td><td>固定工序组枚举</td><td>id, slug, name（5 组：auto/swiss/inspect/pack/mgmt）</td></tr>
+          <tr><td><code>machines</code></td><td>机台/工位</td><td>id, <b>number(1–23 UNIQUE)</b>, team_id, status</td></tr>
+          <tr><td><code>employees</code></td><td>员工</td><td>id, <b>emp_no(UNIQUE)</b>, name, team_id, status</td></tr>
+          <tr><td><code>products</code></td><td>产品（五金件）</td><td>id, <b>code(UNIQUE)</b>, name, spec, unit</td></tr>
+          <tr><td><code>materials</code></td><td>原料</td><td>id, <b>code(UNIQUE)</b>, name, safety_stock(安全库存)</td></tr>
+          <tr><td><code>suppliers</code></td><td>供应商</td><td>id, <b>name(UNIQUE)</b>, type(材料/外协), tax_no</td></tr>
+          <tr><td><code>locations</code></td><td>库位</td><td>id, <b>code(UNIQUE)</b>, name, area</td></tr>
+          <tr><td><code>users</code> / <code>sessions</code></td><td>RBAC 登录</td><td>users(id, username, password_hash, salt, role) · sessions(token_hash, user_id, expires_at)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">主数据表普遍带 <b>UNIQUE</b> 约束（name/code/number），从根上防止重复建档；<code>owner_role</code> 与 <code>users.role</code> 共同驱动「客户数据按角色隔离」。</div>
+    </div>
+  </section>
+
+  <!-- Slide 5: 核心表结构（二）业务闭环 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">SCHEMA · 业务闭环</div>
+      <h2>三、核心表结构（二）：业务闭环关键表</h2>
+      <table>
+        <thead><tr><th>闭环</th><th>代表表</th><th>核心字段（要点）</th></tr></thead>
+        <tbody>
+          <tr><td><b>OTC</b></td><td><code>sales_orders</code> / <code>so_items</code></td><td>so_no, customer_id, status；product_id, qty, unit_price, <b>delivered_qty</b>(发货回写)</td></tr>
+          <tr><td><b>P2P</b></td><td><code>purchase_orders</code> / <code>po_items</code></td><td>po_no, supplier_id, status；material_id, qty, unit_price, received_qty</td></tr>
+          <tr><td><b>P2D</b></td><td><code>production_tasks</code> / <code>task_operations</code> / <code>production_log</code></td><td>task_no, product_id, plan_qty, sales_order_id；seq, name, team_slug；machine_id, employee_id, qty, <b>task_id/operation_id</b></td></tr>
+          <tr><td><b>WMS</b></td><td><code>stock_in/out</code> · <code>finished_goods</code> · <code>fg_stock_in/out</code> · <code>inventory_count</code></td><td>material_id/qty(+task_id 追溯)；finished_good_id/qty/source/so_id；count_no + items(book/actual/diff)</td></tr>
+          <tr><td><b>QMS</b></td><td><code>quality_checks</code> / <code>outsources</code></td><td>type(进料/过程/成品/外发回收), qty_check, qty_ng, result；process_name, supplier_id, product_id/material_id, status</td></tr>
+          <tr><td><b>FICO</b></td><td><code>finance_ledger</code> / <code>ar_invoices</code> / <code>ap_invoices</code></td><td>voucher_no, type, category, so_id, amount；ar_no/so_id/customer_id/amount/received；ap_no/po_id/supplier_id/amount/paid</td></tr>
+        </tbody>
+      </table>
+      <div class="legend"><b>设计取舍：</b><code>purchase_plans</code>（采购计划）与 <code>purchase_orders</code>（已下单）分离——物料缺口阶段尚无供应商，计划实体不强迫填供应商，转单时才补，避免歪曲「已下单」语义。</div>
+    </div>
+  </section>
+
+  <!-- Slide 6: 数据关系 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">RELATIONSHIPS · 外键关联</div>
+      <h2>四、数据关系：以主数据为锚的关联骨架</h2>
+      <div style="border:1px solid var(--line); border-radius:14px; padding:10px; background:#fff">
+      <svg viewBox="0 0 720 460" width="100%" style="display:block">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/>
+          </marker>
+          <marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#0d9488"/>
+          </marker>
+        </defs>
+        <!-- 连接线（先画，置于盒子下方） -->
+        <g stroke="#2563eb" stroke-width="1.6" opacity=".5">
+          <line x1="360" y1="255" x2="595" y2="80" marker-end="url(#ah)"/>
+          <line x1="360" y1="255" x2="605" y2="240" marker-end="url(#ah)"/>
+          <line x1="360" y1="255" x2="360" y2="60" marker-end="url(#ah)"/>
+          <line x1="360" y1="255" x2="125" y2="245" marker-end="url(#ah)"/>
+          <line x1="360" y1="255" x2="125" y2="370" marker-end="url(#ah)"/>
+          <line x1="360" y1="255" x2="360" y2="390" marker-end="url(#ah)"/>
+        </g>
+        <g stroke="#0d9488" stroke-width="1.6" stroke-dasharray="5 4" opacity=".7">
+          <line x1="560" y1="110" x2="380" y2="370" marker-end="url(#ah2)"/>
+          <line x1="580" y1="270" x2="390" y2="380" marker-end="url(#ah2)"/>
+          <line x1="300" y1="90" x2="150" y2="240" marker-end="url(#ah2)"/>
+          <line x1="300" y1="90" x2="150" y2="350" marker-end="url(#ah2)"/>
+          <line x1="560" y1="90" x2="150" y2="240" marker-end="url(#ah2)"/>
+        </g>
+        <!-- 主数据底座 -->
+        <g>
+          <rect x="250" y="210" width="220" height="90" rx="12" fill="#1e3a8a"/>
+          <text x="360" y="238" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">主数据底座</text>
+          <text x="360" y="260" text-anchor="middle" fill="#cbd5e1" font-size="11">customers / products / materials</text>
+          <text x="360" y="278" text-anchor="middle" fill="#cbd5e1" font-size="11">suppliers / machines / employees</text>
+        </g>
+        <!-- OTC -->
+        <g><rect x="490" y="40" width="210" height="80" rx="12" fill="#fff" stroke="#2563eb"/>
+          <text x="595" y="68" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="700">OTC 销售到收款</text>
+          <text x="595" y="88" text-anchor="middle" fill="#475569" font-size="10.5">quotations·sales_orders</text>
+          <text x="595" y="104" text-anchor="middle" fill="#475569" font-size="10.5">ar_invoices·ar_receipts</text></g>
+        <!-- P2P -->
+        <g><rect x="500" y="200" width="210" height="80" rx="12" fill="#fff" stroke="#2563eb"/>
+          <text x="605" y="228" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="700">P2P 采购到付款</text>
+          <text x="605" y="248" text-anchor="middle" fill="#475569" font-size="10.5">purchase_orders·ap_invoices</text>
+          <text x="605" y="264" text-anchor="middle" fill="#475569" font-size="10.5">purchase_invoices(三单匹配)</text></g>
+        <!-- P2D -->
+        <g><rect x="250" y="20" width="220" height="80" rx="12" fill="#fff" stroke="#2563eb"/>
+          <text x="360" y="48" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="700">P2D 计划到生产</text>
+          <text x="360" y="68" text-anchor="middle" fill="#475569" font-size="10.5">boms·production_tasks</text>
+          <text x="360" y="84" text-anchor="middle" fill="#475569" font-size="10.5">production_log·领料</text></g>
+        <!-- WMS -->
+        <g><rect x="20" y="200" width="210" height="90" rx="12" fill="#fff" stroke="#2563eb"/>
+          <text x="125" y="230" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="700">WMS 仓储</text>
+          <text x="125" y="250" text-anchor="middle" fill="#475569" font-size="10.5">stock_*/finished_goods</text>
+          <text x="125" y="266" text-anchor="middle" fill="#475569" font-size="10.5">locations·inventory_count</text></g>
+        <!-- QMS -->
+        <g><rect x="20" y="330" width="210" height="80" rx="12" fill="#fff" stroke="#2563eb"/>
+          <text x="125" y="358" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="700">QMS 质量</text>
+          <text x="125" y="378" text-anchor="middle" fill="#475569" font-size="10.5">quality_checks</text>
+          <text x="125" y="394" text-anchor="middle" fill="#475569" font-size="10.5">outsources(外发)</text></g>
+        <!-- FICO -->
+        <g><rect x="250" y="350" width="220" height="80" rx="12" fill="#0f766e"/>
+          <text x="360" y="378" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">FICO 财务过账</text>
+          <text x="360" y="398" text-anchor="middle" fill="#ccfbf1" font-size="10.5">finance_ledger·资金流</text></g>
+      </svg>
+      </div>
+      <div class="legend"><b>蓝色实线</b>：各闭环 → 主数据（引用客户/产品/物料/供应商）；<b>绿色虚线</b>：闭环间集成流（发货→应收、到货→应付、报工→入库、检验贯穿、发货→出库）。</div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="card"><h3>级联策略（删了会怎样）</h3>
+          <ul>
+            <li><span class="pill r">CASCADE</span>明细随主表删：so_items、po_items、bom_items、task_operations</li>
+            <li><span class="pill b">SET NULL</span>可选关联置空：production_log.task_id、stock_out.task_id、quality_checks.*</li>
+            <li><span class="pill r">RESTRICT</span>防误删：outsources.supplier_id（有外发单的供应商不可删）</li>
+          </ul></div>
+        <div class="card"><h3>关键外键举例</h3>
+          <ul>
+            <li>sales_orders.customer_id → customers</li>
+            <li>bom_items.material_id → materials；qty_per × loss_rate</li>
+            <li>production_tasks.product_id → products；sales_order_id → sales_orders</li>
+            <li>ar_invoices.so_id → sales_orders；ap_invoices.po_id → purchase_orders</li>
+          </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 7: 关键数据操作流程 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">DATA FLOWS</div>
+      <h2>五、关键数据操作流程（实时派生演示）</h2>
+
+      <div style="margin:10px 0 18px"><b style="color:#1e40af">① MRP 净需求（销售 → 采购/自制计划）</b>
+        <div class="flow">
+          <div class="step"><div class="n">1</div><div class="t">销售订单</div><div class="d">so_items 给出成品数量</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">2</div><div class="t">展开 BOM</div><div class="d">bom_items × qty_per ×(1+loss)</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">3</div><div class="t">减实时库存</div><div class="d">stock_in − stock_out 聚合</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">4</div><div class="t">生成计划</div><div class="d">purchase_plans(待采购) + production_tasks(自制)</div></div>
+        </div>
+      </div>
+
+      <div style="margin:10px 0 18px"><b style="color:#1e40af">② 领料成本自动归集（业财一体核心）</b>
+        <div class="flow">
+          <div class="step"><div class="n">1</div><div class="t">确认发料</div><div class="d">stock_out 写 task_id + 实领量</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">2</div><div class="t">算材料成本</div><div class="d">实领量 × materials.最新单价</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">3</div><div class="t">写台账</div><div class="d">finance_ledger(category=物料, so_id)</div></div>
+          <div class="arrow">→</div>
+          <div class="step"><div class="n">4</div><div class="t">毛利率</div><div class="d">从「估」变「算」</div></div>
+        </div>
+      </div>
+
+      <div class="grid g2">
+        <div class="card"><h3><span class="tag">③</span>应收自动生成 + 冲减</h3>
+          <ul><li>销售发货(fg_stock_out) → 自动建 <code>ar_invoices</code>(so_id, customer_id, 发货额)</li>
+          <li>登记 <code>ar_receipts</code> 冲减 received → 余额/状态实时重算</li></ul></div>
+        <div class="card"><h3><span class="tag t2">④</span>应付 + 三单匹配</h3>
+          <ul><li>采购到货(stock_in, po_id) → 自动建 <code>ap_invoices</code>(实收×单价)</li>
+          <li>登记 <code>purchase_invoices</code>(发票) 与 PO/入库比对 match_status；付款冲减</li></ul></div>
+      </div>
+      <div class="callout"><b>⑤ 报工 → 完工入库：</b><code>production_log</code> 逐工序报工(task_id, operation_id)；取「末工序量」作为成品产量 → <code>fg_stock_in</code> 完工入库，库存余额实时算（不重复计中间工序）。</div>
+    </div>
+  </section>
+
+  <!-- Slide 8: 设计如何支撑功能 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">WHY IT WORKS</div>
+      <h2>六、设计如何支撑项目主要功能</h2>
+      <table>
+        <thead><tr><th>业务闭环</th><th>对应表（数据贯通）</th><th>支撑的能力</th></tr></thead>
+        <tbody>
+          <tr><td><b>OTC</b></td><td>quotations / sales_orders / ar_*</td><td>报价转单、发货、应收挂账与收款核销，老板随时看「谁欠我多少」</td></tr>
+          <tr><td><b>P2P</b></td><td>purchase_plans / purchase_orders / ap_* / purchase_invoices</td><td>缺料→采购→到货→应付→付款，三单匹配杜绝「票不齐就付款」</td></tr>
+          <tr><td><b>P2D</b></td><td>boms / production_tasks / production_log / material_requisitions</td><td>BOM→MRP→任务单→领料→报工→完工，按单追溯产量</td></tr>
+          <tr><td><b>WMS</b></td><td>stock_*/finished_goods / locations / inventory_count</td><td>原料+成品双库存、库位管理、定期盘点差异</td></tr>
+          <tr><td><b>QMS</b></td><td>quality_checks / outsources</td><td>进料/过程/成品/外发回收四类检验，质量留痕</td></tr>
+          <tr><td><b>FICO</b></td><td>finance_ledger / ar_* / ap_*</td><td>成本按订单归集、资金流闭环、毛利率「算」出来</td></tr>
+        </tbody>
+      </table>
+      <div class="grid g3" style="margin-top:16px">
+        <div class="card"><h3>实时派生</h3><ul><li>老板驾驶舱 / 报表随时准确</li><li>不存余额，永不「对不上」</li></ul></div>
+        <div class="card"><h3>RBAC 隔离</h3><ul><li>users.role + customers.owner_role</li><li>销售/跟单仅见自己客户</li></ul></div>
+        <div class="card"><h3>操作审计</h3><ul><li>audit_log 记录写操作</li><li>异常不影响主流程</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 9: 设计亮点 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker">HIGHLIGHTS</div>
+      <h2>七、设计亮点与合理性总结</h2>
+      <div class="grid g2">
+        <div class="card"><h3><span class="tag">✓</span>单一真相源</h3><ul><li>派生数据（库存、产量、应收应付余额）实时算，杜绝多表不一致</li></ul></div>
+        <div class="card"><h3><span class="tag t2">✓</span>引用完整性内置</h3><ul><li>外键 + CASCADE/SET NULL/RESTRICT，删除后果可预期、安全</li></ul></div>
+        <div class="card"><h3><span class="tag">✓</span>轻量可部署</h3><ul><li>node:sqlite 零安装，车间电脑/单机即跑，单文件易备份</li></ul></div>
+        <div class="card"><h3><span class="tag t2">✓</span>面向小厂的减法</h3><ul><li>不做 MPS/APS、不冗余版本，聚焦业财一体与追溯</li></ul></div>
+        <div class="card"><h3><span class="tag">✓</span>渐进演进结构</h3><ul><li>计划(purchase_plans)与订单(PO)分离，不歪曲「已下单」语义</li></ul></div>
+        <div class="card"><h3><span class="tag t2">✓</span>安全与合规</h3><ul><li>scrypt 密码+会话、RBAC 角色、操作审计留痕</li></ul></div>
+      </div>
+      <div class="callout" style="margin-top:18px">一句话总结：<b>用最少的存储冗余 + 最强的引用约束，把「报价→生产→发货→收款 / 缺料→采购→付款」两条资金流，以及质量与库存，全部串成一张可实时核算的关系网。</b>这正是小厂业财一体化的关键。</div>
+      <p class="lead" style="margin-top:14px">附：完整表结构、字段与索引见项目 <code>db.js</code>；对外接口与前端交互见 <code>README.md</code> 与 <code>docs/</code> 下各方案文档。</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="hint">← → 翻页 · 可 Ctrl+P 导出 PDF</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const total=slides.length;
+  let cur=0;
+  const counter=document.getElementById('counter');
+  const prev=document.getElementById('prev');
+  const next=document.getElementById('next');
+  const dotsBox=document.getElementById('dots');
+
+  slides.forEach((_,i)=>{
+    const b=document.createElement('button');
+    b.addEventListener('click',()=>go(i));
+    dotsBox.appendChild(b);
+  });
+  const dots=[...dotsBox.children];
+
+  function go(i){
+    cur=Math.max(0,Math.min(total-1,i));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===cur));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===cur));
+    counter.textContent=(cur+1)+' / '+total;
+    prev.disabled=cur===0; next.disabled=cur===total-1;
+    window.scrollTo(0,0);
+  }
+  prev.addEventListener('click',()=>go(cur-1));
+  next.addEventListener('click',()=>go(cur+1));
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown') go(cur+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp') go(cur-1);
+  });
+  go(0);
+</script>
+</body>
+</html>
