@@ -6,7 +6,7 @@ const XLSX = require('xlsx');
 const { db } = require('../db');
 const { loginAs } = require('./helpers');
 
-const BASE = 'http://127.0.0.1:3100';
+const BASE = process.env.TEST_BASE || process.env.BASE || 'http://127.0.0.1:3100';
 const RUN = Date.now(); // 避免 UNIQUE 残留
 
 // 金蝶风表头（含实体声明行 + 说明行 + 字段头行）

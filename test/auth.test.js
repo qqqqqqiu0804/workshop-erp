@@ -20,7 +20,7 @@ const BOSS = 't_auth_boss';
 const BOSS_PWD = 'Test1234';
 createUser(BOSS, BOSS_PWD, '老板', '测试老板');
 
-const BASE = process.env.TEST_BASE || 'http://127.0.0.1:3100';
+const BASE = process.env.TEST_BASE || process.env.BASE || 'http://127.0.0.1:3100';
 
 async function raw(method, path, body, cookie) {
   const headers = { 'Content-Type': 'application/json' };

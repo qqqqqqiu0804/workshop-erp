@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const XLSX = require('xlsx');
 const { db } = require('../db');
 
-const BASE = 'http://127.0.0.1:3100';
+const BASE = process.env.TEST_BASE || process.env.BASE || 'http://127.0.0.1:3100';
 const fx = {};
 
 function buildXlsxMatrix(rows) {

@@ -7,7 +7,7 @@
  */
 const { createUser } = require('../routes/auth');
 
-const BASE = process.env.TEST_BASE || 'http://127.0.0.1:3100';
+const BASE = process.env.TEST_BASE || process.env.BASE || 'http://127.0.0.1:3100';
 const cookieCache = {};
 
 async function loginAs(role) {
