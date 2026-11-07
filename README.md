@@ -205,3 +205,40 @@ npm start        # 默认端口 3000；可用 PORT=3100 npm start 覆盖
 - **生产记录怎么来**：产量统一写入 `production_log`，主要由「生产任务单」逐道工序报工产生；手工日报录入接口 `POST /api/production`（task_id 为空）也已提供，但当前前端无独立录入页，日常产量请在「生产任务单」页报工登记。
 - **想用 HTTPS（内网加密）**：`node gencert.js` 生成自签 `ssl.key`/`ssl.crt`，再以 `SSL_KEY=./ssl.key SSL_CERT=./ssl.crt npm start` 启动（浏览器会提示自签证书不受信任，车间内网手动信任即可；公网请用 CA 签发证书）。
 - **操作审计**：老板/管理可在「用户管理」相邻入口或直接 `GET /api/audit` 查看最近操作记录（登录成败、各资源写操作放行/拒绝），用于追溯越权尝试与误操作。
+
+
+## 测试（如何跑全绿）
+
+本仓库的测试是**集成测试**：部分用例通过 HTTP 调用一个正在运行的服务（`127.0.0.1:3100`），
+并对 `data/workshop.db` 读写。因此 `npm test` 单独跑会有大量 `fetch failed` —— 需要先准备环境。
+
+正确流程（干净库，全新 clone 亦可复现）：
+
+```bash
+npm install
+rm -rf data/            # Windows: rmdir /s /q data  （可选，回到全新库）
+node seed.js            # 写入示例主数据（员工/产品/物料/生产记录）
+PORT=3100 node server.js &   # 另开一个终端，保持运行
+npm test                # 期望 180/180 通过
+```
+
+> Node 要求 **>= 22.13.0**（`node:sqlite` 在此版本转正，无需 `--experimental-sqlite`）。
+> 用 `node --version` 确认；本机若 PATH 上是旧版 Node，测试会以
+> `ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite` 失败。
+
+### 关于测试自包含
+
+早期版本里 `test/teams-cleanup.test.js` 断言「生产库 E2003–E2008 六名 CNC 员工已并入
+走心机组」——那是针对**某个具体生产数据库快照**的一次性数据迁移回归，代码库里并不存在
+这些员工。在全新 clone 的示例库上（employees 为空）该断言必然失败，连锁污染后续用例。
+
+开源版已把它改为**自包含**：测试自己插入一条探针员工数据、验证工序组字典与外键引用
+完整性、`after()` 里自行清理，不依赖任何外部历史数据。改完后全量测试在全新库上稳定
+180/180 通过。
+
+### 已知边界
+
+- 测试共享同一个 `data/workshop.db`，用例之间存在顺序依赖；`--test-concurrency=1` 已写进
+  `npm test`。真正工程化应改用每个测试文件独立临时库（`DB_PATH` 环境变量已支持）。
+- 无前端测试，UI 回归靠手点。
+- 未接入覆盖率统计（不引入 devDependencies，保持「零原生依赖」的部署约束）。
